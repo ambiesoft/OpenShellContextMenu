@@ -8,7 +8,7 @@
 #include "../../lsMisc/IsWindowsNT.h"
 #include "../../lsMisc/stlScopedClear.h"
 #include "../../lsMisc/stdwin32/stdwin32.h"
-
+#include "../../lsMisc/CommandLineParser.h"
 #include "ContextMenuCB.h"
 
 #pragma comment(lib,"Credui.lib")
@@ -837,11 +837,8 @@ void freeppItemIDList(LPCITEMIDLIST* pItemIDList)
 	free(pItemIDList);
 }
 
-void ShowShellContextMenu()
+void ShowShellContextMenu(const STRVEC& arFiles)
 {
-	STRVEC arFiles;
-	arFiles.push_back(L"C:\\T\\New Text Document.txt");
-	arFiles.push_back(L"C:\\T\\j.zip");
 	BOOL bUseMulti = arFiles.size() > 1;
 
 	LPCITEMIDLIST* pItemIDList = NULL;
@@ -1058,6 +1055,9 @@ void ShowShellContextMenu()
 	freepKey(pKey);
 	freeppItemIDList(pItemIDList);
 }
+
+STRVEC gInFiles;
+
 LRESULT CALLBACK MainWndProc(
 	_In_ HWND   hwnd,
 	_In_ UINT   uMsg,
@@ -1085,13 +1085,15 @@ LRESULT CALLBACK MainWndProc(
 	{
 		case WM_CREATE:
 		{
-			PostMessage(hwnd, WM_APP_TEST, 0, 0);
+			
 		}
 		break;
 
 		case WM_APP_TEST:
 		{
-			ShowShellContextMenu();
+			//STRVEC arFiles;
+			//arFiles.push_back(L"C:\\LegacyPrograms\\WhiteBrowser\\WhiteBrowser.exe");
+			ShowShellContextMenu(gInFiles);
 			PostQuitMessage(0);
 		}
 		break;
@@ -1106,6 +1108,30 @@ int CALLBACK wWinMain(
 	_In_ int       nCmdShow
 	)
 {
+	{
+		CCommandLineParser parser;
+		COption mainOption;
+		parser.AddOption(&mainOption);
+		parser.Parse();
+		wstring unk = parser.getUnknowOptionStrings();
+		if (!unk.empty())
+		{
+			wstring message = I18N(L"Unknown option(s):\n");
+			message += unk;
+			TfxMessageBox(message.c_str());
+			return 1;
+		}
+		for (size_t i = 0; i < mainOption.getValueCount(); ++i)
+		{
+			gInFiles.push_back(mainOption.getValue(i));
+		}
+	}
+	if (gInFiles.empty())
+	{
+		TfxMessageBox(I18N(L"No input path"));
+		return 0;
+	}
+
 	if (FAILED(OleInitialize(NULL)))
 	{
 		TfxMessageBox(L"OleInitialize failed.");
@@ -1130,7 +1156,7 @@ int CALLBACK wWinMain(
 	STLSCOPEDFREE(ghMain, HWND, DestroyWindow);
 
 	ShowWindow(ghMain, SW_SHOW);
-
+	PostMessage(ghMain, WM_APP_TEST, 0, 0);
 	MSG msg;
 	BOOL bRet;
 	while ((bRet = GetMessage(&msg, NULL, 0, 0)) != 0)

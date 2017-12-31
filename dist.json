@@ -1,0 +1,33 @@
+{
+    "name": "OpenShellContextMenu",
+    "solution": "OpenShellContextMenu.sln",
+    "targetproject": "OpenShellContextMenu",
+    "configuration": "Release",
+    "targets": [
+        {
+            "setoutdirforbuild": true,
+            "outdir": "C:/Linkout/OpenShellContextMenu/",
+            "platform": "Win32"
+        },
+        {
+            "setoutdirforbuild": true,
+            "outdir": "C:/Linkout/OpenShellContextMenu/",
+            "platform": "x64"
+        }
+    ],
+    "ShouldBeFiles": [
+        "OpenShellContextMenu.exe",
+        "OpenShellContextMenu.pdb",
+        "OpenShellContextMenu64.exe",
+        "OpenShellContextMenu64.pdb",
+        "history.txt"
+    ],
+    "TotalFileCount": 5,
+    "archivedir": "C:\\Linkout",
+    "remotedir": "http://ambiesoft.fam.cx/ffdav/uploads/Release/",
+    "remotesha1": "http://ambiesoft.fam.cx/ffdav/uploads/getSha1.php?file=Release/{}",
+    "ShouldNotBeFiles": [],
+    "ShouldBeOneOfThem": [],
+    "obtainverfrom": "history.txt",
+    "obtainverregex": "\\d+\\.\\d+"
+}
