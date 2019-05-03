@@ -1,5 +1,9 @@
 #pragma once
 
+#include <afx.h>
+#include <afxwin.h>
+#include <afxole.h>
+
 #include <Windows.h>
 
 #include <Shlwapi.h>
@@ -23,8 +27,8 @@ _COM_SMARTPTR_TYPEDEF(IContextMenu3, __uuidof(IContextMenu3));
 #include <memory>
 
 #define DASSERT(x) assert(x)
-#define TRACE(x) (void)0
-#define TRACE1(x,y) (void)0
+//#define TRACE(x) (void)0
+//#define TRACE1(x,y) (void)0
 
 #define I18N(s) s
 
@@ -42,3 +46,5 @@ _COM_SMARTPTR_TYPEDEF(IContextMenu3, __uuidof(IContextMenu3));
 enum {
 	WM_APP_TEST = WM_APP+1,
 };
+
+typedef std::vector<std::wstring> STRVEC;

@@ -57,6 +57,9 @@
     <ClCompile Include="..\..\lsMisc\WaitWindowClose.cpp">
       <Filter>2 Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="ShellFolderDS.cpp">
+      <Filter>2 Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stdafx.h">
@@ -96,6 +99,9 @@
       <Filter>1 Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\lsMisc\WaitWindowClose.h">
+      <Filter>1 Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ShellFolderDS.h">
       <Filter>1 Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -1,6 +1,6 @@
 #include "stdafx.h"
 
-
+#include <functional>
 
 #include "../../lsMisc/CreateSimpleWindow.h"
 #include "../../lsMisc/GetFilesInfo.h"
@@ -14,6 +14,7 @@
 #include "../../lsMisc/CHandle.h"
 #include "../../lsMisc/WaitWindowClose.h"
 
+#include "ShellFolderDS.h"
 #include "ContextMenuCB.h"
 
 #pragma comment(lib,"Credui.lib")
@@ -29,15 +30,18 @@ using namespace std;
 
 HWND ghMain;
 
-typedef vector<wstring> STRVEC;
 
-typedef HRESULT(__stdcall* pfnSHCreateDefaultContextMenu)(const DEFCONTEXTMENU *pdcm, REFIID riid, void **ppv);
+
+typedef HRESULT(__stdcall* pfnSHCreateDefaultContextMenu)(const DEFCONTEXTMENU* pdcm, REFIID riid, void** ppv);
 pfnSHCreateDefaultContextMenu fnSHCreateDefaultContextMenu;
 
 CContextMenuCB m_cccb;
 IContextMenuPtr m_pcm;
 IContextMenu2Ptr m_pcm2;
 IContextMenu3Ptr m_pcm3;
+
+CShellFolderDS spy;
+
 int TfxMessageBox(LPCWSTR pMessage)
 {
 	return MessageBox(ghMain, pMessage, APPNAME, MB_ICONEXCLAMATION);
@@ -71,7 +75,7 @@ void showpidl(LPITEMIDLIST pidl)
 	}
 }
 
-HRESULT getPIDLsFromPath(const STRVEC& arrayFiles, LPCITEMIDLIST** ppItemIDList)
+HRESULT getPIDLsFromPath(const STRVEC & arrayFiles, LPCITEMIDLIST * *ppItemIDList)
 {
 	IShellFolderPtr pSFDesktop;
 	SHGetDesktopFolder(&pSFDesktop);
@@ -97,7 +101,7 @@ HRESULT getPIDLsFromPath(const STRVEC& arrayFiles, LPCITEMIDLIST** ppItemIDList)
 	return S_OK;
 }
 
-int countPidls(LPCITEMIDLIST* pItemIDList)
+int countPidls(LPCITEMIDLIST * pItemIDList)
 {
 	int ret = 0;
 	while (*pItemIDList)
@@ -109,13 +113,13 @@ int countPidls(LPCITEMIDLIST* pItemIDList)
 	return ret;
 }
 
-void getExtsFromPath(const STRVEC& arrayFiles, set<wstring>& exts)
+void getExtsFromPath(const STRVEC & arrayFiles, set<wstring> & exts)
 {
 	int nCount = (int)arrayFiles.size();
 	for (int i = 0; i < nCount; ++i)
 	{
 		size_t nDot = arrayFiles[i].rfind(L'.');// ReverseFind(L'.');
-		if (nDot==wstring::npos)
+		if (nDot == wstring::npos)
 			continue;
 		size_t nBS = arrayFiles[i].rfind(L'\\');// ReverseFind(L'\\');
 		if (nBS > nDot)
@@ -127,7 +131,7 @@ void getExtsFromPath(const STRVEC& arrayFiles, set<wstring>& exts)
 	}
 }
 
-HRESULT getKeysFromPath(const STRVEC& arrayFiles, HKEY** ppKey, UINT* pnKeyCount)
+HRESULT getKeysFromPath(const STRVEC & arrayFiles, HKEY * *ppKey, UINT * pnKeyCount)
 {
 	HKEY buf[16] = { 0 };
 	int bufi = 0;
@@ -202,9 +206,9 @@ HRESULT getKeysFromPath(const STRVEC& arrayFiles, HKEY** ppKey, UINT* pnKeyCount
 
 #define DFM_INVOKECOMMANDEX 12
 HRESULT CALLBACK shellcb(
-	IShellFolder *psf,
+	IShellFolder * psf,
 	HWND         hwnd,
-	IDataObject  *pdtobj,
+	IDataObject * pdtobj,
 	UINT         uMsg,
 	WPARAM       wParam,
 	LPARAM       lParam)
@@ -240,11 +244,11 @@ HRESULT CALLBACK shellcb(
 
 HRESULT STDMETHODCALLTYPE CContextMenuCB::CallBack(
 	/* [unique][in] */
-	IShellFolder *psf,
+	IShellFolder * psf,
 	/* [in] */
 	HWND hwndOwner,
 	/* [unique][in] */
-	IDataObject *pdtobj,
+	IDataObject * pdtobj,
 	/* [in] */
 	UINT uMsg,
 	/* [in] */
@@ -257,10 +261,10 @@ HRESULT STDMETHODCALLTYPE CContextMenuCB::CallBack(
 
 HRESULT mySHParseDisplayName(
 	LPCWSTR          pszName,
-	IBindCtx         *pbc,
-	LPITEMIDLIST	*ppidl,
+	IBindCtx * pbc,
+	LPITEMIDLIST * ppidl,
 	SFGAOF           sfgaoIn,
-	SFGAOF           *psfgaoOut)
+	SFGAOF * psfgaoOut)
 {
 	IShellFolderPtr pDesk;
 	if (FAILED(SHGetDesktopFolder(&pDesk)))
@@ -281,7 +285,7 @@ HRESULT mySHParseDisplayName(
 	return S_OK;
 }
 
-HRESULT GetUIObjectOfFile(HWND hwnd, LPCWSTR pszPath, REFIID riid, void **ppv)
+HRESULT GetUIObjectOfFile(HWND hwnd, LPCWSTR pszPath, REFIID riid, void** ppv)
 {
 	*ppv = NULL;
 	HRESULT hr;
@@ -298,7 +302,7 @@ HRESULT GetUIObjectOfFile(HWND hwnd, LPCWSTR pszPath, REFIID riid, void **ppv)
 		LPCITEMIDLIST pidlChild;
 		if (SUCCEEDED(hr = SHBindToParent(pidl,
 			IID_IShellFolder,
-			(void**)&pSF,
+			(void**)& pSF,
 			&pidlChild)))
 		{
 			hr = pSF->GetUIObjectOf(hwnd, 1, &pidlChild, riid, NULL, ppv);
@@ -317,7 +321,7 @@ wstring removeExt(LPCWSTR p)
 	*pRet = 0;
 	return pT;
 }
-BOOL createFileMenu(HMENU hSendTo, LPCTSTR pDirectory, map<size_t, wstring>& sendtomap)
+BOOL createFileMenu(HMENU hSendTo, LPCTSTR pDirectory, map<size_t, wstring> & sendtomap)
 {
 	FILESINFOW fi;
 	if (!GetFilesInfoW(pDirectory, fi))
@@ -341,7 +345,7 @@ BOOL createFileMenu(HMENU hSendTo, LPCTSTR pDirectory, map<size_t, wstring>& sen
 	return TRUE;
 }
 
-wstring dqIfSpace(const wstring& s)
+wstring dqIfSpace(const wstring & s)
 {
 	if (s.empty())
 		return s;
@@ -355,7 +359,7 @@ wstring dqIfSpace(const wstring& s)
 	return _T("\"") + s + _T("\"");
 }
 
-BOOL CreateShellMenu(HMENU hmenu, IContextMenuPtr pcm, map<size_t, wstring>& sendtomap, BOOL bUseMulti)
+BOOL CreateShellMenu(HMENU hmenu, IContextMenuPtr pcm, map<size_t, wstring> & sendtomap, BOOL bUseMulti)
 {
 	IContextMenu3Ptr pcm3 = pcm;
 	if (pcm3)
@@ -456,7 +460,7 @@ BOOL CreateShellMenu(HMENU hmenu, IContextMenuPtr pcm, map<size_t, wstring>& sen
 	return TRUE;
 }
 
-void freepKey(HKEY* pKey)
+void freepKey(HKEY * pKey)
 {
 	if (!pKey)
 		return;
@@ -473,21 +477,21 @@ void freepKey(HKEY* pKey)
 }
 _COM_SMARTPTR_TYPEDEF(IShellLinkDataList, IID_IShellLinkDataList);
 static BOOL GetShortcutFileInfo(LPCTSTR pszShortcutFile,
-	tstring& targetFile,
-	tstring& curDir,
-	tstring& arg,
-	BOOL* pbIsAdmin = NULL)
+	tstring & targetFile,
+	tstring & curDir,
+	tstring & arg,
+	BOOL * pbIsAdmin = NULL)
 {
 	BOOL bFailed = TRUE;
 	HRESULT hr;
 	IShellLinkWPtr pShellLink = NULL;
 	CoInitialize(NULL);
 	TCHAR buffer[MAX_PATH];
-	hr = CoCreateInstance(CLSID_ShellLink, NULL, CLSCTX_INPROC_SERVER, IID_IShellLink, (LPVOID*)&pShellLink);
+	hr = CoCreateInstance(CLSID_ShellLink, NULL, CLSCTX_INPROC_SERVER, IID_IShellLink, (LPVOID*)& pShellLink);
 	if (SUCCEEDED(hr) && pShellLink != NULL)
 	{
 		IPersistFilePtr pPFile = NULL;
-		hr = pShellLink->QueryInterface(IID_IPersistFile, (LPVOID*)&pPFile);
+		hr = pShellLink->QueryInterface(IID_IPersistFile, (LPVOID*)& pPFile);
 		if (SUCCEEDED(hr) && pPFile != NULL)
 		{
 			hr = pPFile->Load(pszShortcutFile, 0);
@@ -533,7 +537,7 @@ static BOOL GetShortcutFileInfo(LPCTSTR pszShortcutFile,
 		{
 			*pbIsAdmin = FALSE;
 			IShellLinkDataListPtr pSLDL;
-			hr = pShellLink->QueryInterface(IID_IShellLinkDataList, (void**)&pSLDL);
+			hr = pShellLink->QueryInterface(IID_IShellLinkDataList, (void**)& pSLDL);
 			if (pSLDL)
 			{
 				DWORD dwFlags = 0;
@@ -651,7 +655,7 @@ BOOL OpenCommonShortcutSpecial(HWND hWnd, LPCTSTR pApp, LPCTSTR pCommand = NULL,
 			CREDUI_FLAGS_EXCLUDE_CERTIFICATES |
 			//			CREDUI_FLAGS_COMPLETE_USERNAME |
 			0
-			);
+		);
 		if (dwResult != NO_ERROR)
 			return FALSE;
 
@@ -734,7 +738,7 @@ BOOL OpenCommonShortcutSpecial(HWND hWnd, LPCTSTR pApp, LPCTSTR pCommand = NULL,
 	return TRUE;
 }
 
-BOOL SetFileOntoClipboard(const STRVEC& arFiles, BOOL bCut)
+BOOL SetFileOntoClipboard(const STRVEC & arFiles, BOOL bCut)
 {
 	size_t i;
 	// COleDataSource ds;
@@ -761,7 +765,7 @@ BOOL SetFileOntoClipboard(const STRVEC& arFiles, BOOL bCut)
 		if (NULL == hgDrop)
 			return FALSE;
 
-		DROPFILES* pDrop = (DROPFILES*)GlobalLock(hgDrop);
+		DROPFILES * pDrop = (DROPFILES*)GlobalLock(hgDrop);
 		if (NULL == pDrop)
 		{
 			GlobalFree(hgDrop);
@@ -805,7 +809,7 @@ BOOL SetFileOntoClipboard(const STRVEC& arFiles, BOOL bCut)
 		if (NULL == hgDE)
 			return FALSE;
 
-		DWORD* pDE = (DWORD*)GlobalLock(hgDE);
+		DWORD * pDE = (DWORD*)GlobalLock(hgDE);
 		if (NULL == pDE)
 		{
 			GlobalFree(hgDE);
@@ -828,7 +832,7 @@ BOOL SetFileOntoClipboard(const STRVEC& arFiles, BOOL bCut)
 	return TRUE;
 }
 
-void freeppItemIDList(LPCITEMIDLIST* pItemIDList)
+void freeppItemIDList(LPCITEMIDLIST * pItemIDList)
 {
 	if (!pItemIDList)
 		return;
@@ -839,13 +843,13 @@ void freeppItemIDList(LPCITEMIDLIST* pItemIDList)
 	LPCITEMIDLIST* p = pItemIDList;
 	while (*p)
 	{
-		pMalloc->Free((void*)*p);
+		pMalloc->Free((void*)* p);
 		p++;
 	}
 	free(pItemIDList);
 }
 
-wstring ddd(const STRVEC& arFiles)
+wstring createArgFromList(const STRVEC & arFiles)
 {
 	wstring arg;
 	for (size_t i = 0; i < arFiles.size(); ++i)
@@ -860,224 +864,197 @@ wstring ddd(const STRVEC& arFiles)
 	}
 	return arg;
 }
-void ShowShellContextMenu(const STRVEC& arFiles)
+bool ShowShellContextMenu(const STRVEC & arFiles)
 {
-	BOOL bUseMulti = arFiles.size() > 1;
-
 	LPCITEMIDLIST* pItemIDList = NULL;
 	HKEY* pKey = NULL;
+
+
+	const BOOL bUseMulti = arFiles.size() > 1;
 	IShellFolderPtr pSFDesktop;
 	SHGetDesktopFolder(&pSFDesktop);
-	// CShellFolderDS spy;
+	
+	// runs after this function, clear resources
+	unique_ptr<int, function<void(int*)>> fff(0, [&](int*)
+		{
+			m_pcm = NULL;
+			m_pcm2 = NULL;
+			m_pcm3 = NULL;
+
+			freepKey(pKey);
+			freeppItemIDList(pItemIDList);
+		});
 	HRESULT hr = E_FAIL;
 	IContextMenuPtr pcm;
 
-	do
+
+	if (bUseMulti)
 	{
-		if (bUseMulti)
+		if (FAILED(getPIDLsFromPath(arFiles, &pItemIDList)))
 		{
-			if (FAILED(getPIDLsFromPath(arFiles, &pItemIDList)))
-			{
-				TfxMessageBox(I18N(L"failed to get pidls"));
-				break;;
-			}
-			DASSERT(arFiles.size() == countPidls(pItemIDList));
+			TfxMessageBox(I18N(L"failed to get pidls"));
+			return false;
+		}
+		DASSERT(arFiles.size() == countPidls(pItemIDList));
 
-			UINT nKeyCount = 0;
-			if (FAILED(getKeysFromPath(arFiles, &pKey, &nKeyCount)))
-			{
-				TfxMessageBox(I18N(L"failed to get pidls keys"));
-				break;
-			}
+		UINT nKeyCount = 0;
+		if (FAILED(getKeysFromPath(arFiles, &pKey, &nKeyCount)))
+		{
+			TfxMessageBox(I18N(L"failed to get pidls keys"));
+			return false;
+		}
 
-			// spy.construct(pSFDesktop, arFiles);
-			IShellFolder* pShellFolderDS = NULL;
-			// spy.InternalQueryInterface(&IID_IShellFolder, (void**)&pShellFolderDS);
-			
-			if (fnSHCreateDefaultContextMenu)
-			{
-				DEFCONTEXTMENU dcm = { 0 };
-				dcm.hwnd = ghMain;
-				dcm.pcmcb = &m_cccb;
-				dcm.pidlFolder = NULL;
-				dcm.psf = pShellFolderDS;
-				dcm.cidl = countPidls(pItemIDList);
-				dcm.apidl = pItemIDList;
+		spy.construct(pSFDesktop, arFiles);
+		IShellFolderPtr pShellFolderDS;
+		spy.InternalQueryInterface(&IID_IShellFolder, (void**)& pShellFolderDS);
 
-				dcm.cKeys = nKeyCount;
-				dcm.aKeys = pKey;
+		if (fnSHCreateDefaultContextMenu)
+		{
+			DEFCONTEXTMENU dcm = { 0 };
+			dcm.hwnd = ghMain;
+			dcm.pcmcb = &m_cccb;
+			dcm.pidlFolder = NULL;
+			dcm.psf = pShellFolderDS;
+			dcm.cidl = countPidls(pItemIDList);
+			dcm.apidl = pItemIDList;
 
-				hr = fnSHCreateDefaultContextMenu(&dcm, IID_IContextMenu, (void**)&pcm);
-			}
-			else
-			{
-				//				LPITEMIDLIST p;
-				//				SHGetSpecialFolderLocation(*this, 
-				//					CSIDL_DESKTOP,
-				//					&p);
+			dcm.cKeys = nKeyCount;
+			dcm.aKeys = pKey;
 
-
-				hr = CDefFolderMenu_Create2(
-					NULL,				// An ITEMIDLIST structure for the parent folder. This value can be NULL.
-					ghMain,				//
-					countPidls(pItemIDList), // The number of ITEMIDLIST structures in the array pointed to by apidl.
-					pItemIDList,		// A pointer to an array of ITEMIDLIST structures, one for each item that is selected.
-					pShellFolderDS,	// A pointer to the parent folder's IShellFolder interface. 
-					// This IShellFolder must support the IDataObject interface. 
-					// If it does not, CDefFolderMenu_Create2 fails and returns E_NOINTERFACE. 
-					// This value can be NULL.
-					shellcb,			// The LPFNDFMCALLBACK callback object. This value can be NULL if the callback object is not needed.
-					0,//nKeyCount,			// The number of registry keys in the array pointed to by ahkeys.
-					NULL, //pKey,				// A pointer to an array of registry keys that specify the context menu handlers
-					// used with the menu's entries. For more information on context menu handlers, 
-					// see Creating Context Menu Handlers. This array can contain a maximum of 16 registry keys.
-					&pcm				// The address of an IContextMenu interface pointer that, 
-					// when this function returns successfully, points to the IContextMenu object that represents the context menu.
-					);
-			}
-
-
-
-
-
-
-			// spy.InternalRelease();
-
+			hr = fnSHCreateDefaultContextMenu(&dcm, IID_IContextMenu, (void**)& pcm);
 		}
 		else
 		{
-			hr = GetUIObjectOfFile(ghMain,
-				arFiles[0].c_str(),
-				IID_IContextMenu,
-				(void**)&pcm);
+			hr = CDefFolderMenu_Create2(
+				NULL,				// An ITEMIDLIST structure for the parent folder. This value can be NULL.
+				ghMain,				//
+				countPidls(pItemIDList), // The number of ITEMIDLIST structures in the array pointed to by apidl.
+				pItemIDList,		// A pointer to an array of ITEMIDLIST structures, one for each item that is selected.
+				pShellFolderDS,	// A pointer to the parent folder's IShellFolder interface. 
+				// This IShellFolder must support the IDataObject interface. 
+				// If it does not, CDefFolderMenu_Create2 fails and returns E_NOINTERFACE. 
+				// This value can be NULL.
+				shellcb,			// The LPFNDFMCALLBACK callback object. This value can be NULL if the callback object is not needed.
+				0,//nKeyCount,			// The number of registry keys in the array pointed to by ahkeys.
+				NULL, //pKey,				// A pointer to an array of registry keys that specify the context menu handlers
+				// used with the menu's entries. For more information on context menu handlers, 
+				// see Creating Context Menu Handlers. This array can contain a maximum of 16 registry keys.
+				&pcm				// The address of an IContextMenu interface pointer that, 
+				// when this function returns successfully, points to the IContextMenu object that represents the context menu.
+			);
 		}
+		// spy.InternalRelease();
+	}
+	else
+	{
+		hr = GetUIObjectOfFile(ghMain,
+			arFiles[0].c_str(),
+			IID_IContextMenu,
+			(void**)& pcm);
+	}
 
+	if (FAILED(hr))
+		return false;
 
-		if (SUCCEEDED(hr))
+	//HMENU hmenu = CreatePopupMenu();
+	//STLSCOPEDFREE(hmenu, HMENU, DestroyMenu);
+	CHMenu menu(CreatePopupMenu());
+	map<size_t, wstring> sendtomap;
+	if (!(menu && CreateShellMenu(menu, pcm, sendtomap, bUseMulti)))
+		return false;
+
+	pcm->QueryInterface(IID_IContextMenu2, (void**)& m_pcm2);
+	pcm->QueryInterface(IID_IContextMenu3, (void**)& m_pcm3);
+	m_pcm = pcm;
+
+	POINT point;
+	GetCursorPos(&point);
+	const int iCmd = TrackPopupMenuEx(menu, TPM_RETURNCMD,
+		point.x, point.y, ghMain, NULL);
+
+	// ((CMainFrame*)theApp.m_pMainWnd)->SetMessageText(L"");
+	if (iCmd == ID_SHELLCUSTOM_OPENPARENT)
+	{
+		OpenFolder(ghMain, arFiles[0].c_str());
+	}
+	else if (ID_SHELLCUSTOM_SENDTO_START <= iCmd && iCmd <= ID_SHELLCUSTOM_SENDTO_END)
+	{
+		wstring runfile = sendtomap[iCmd];
+		DASSERT(runfile.size() != 0);
+
+		TCHAR szSendToPath[MAX_PATH];
+		if (SHGetSpecialFolderPath(NULL, szSendToPath, CSIDL_SENDTO, FALSE))
 		{
-			//HMENU hmenu = CreatePopupMenu();
-			//STLSCOPEDFREE(hmenu, HMENU, DestroyMenu);
-			CHMenu menu(CreatePopupMenu());
-			map<size_t, wstring> sendtomap;
-			if (menu && CreateShellMenu(menu, pcm, sendtomap, bUseMulti))
-			{
-				pcm->QueryInterface(IID_IContextMenu2, (void**)&m_pcm2);
-				pcm->QueryInterface(IID_IContextMenu3, (void**)&m_pcm3);
-				m_pcm = pcm;
+			PathAddBackslash(szSendToPath);
+			lstrcat(szSendToPath, runfile.c_str());
 
-				POINT point;
-				GetCursorPos(&point);
-				int iCmd = TrackPopupMenuEx(menu, TPM_RETURNCMD,
-					point.x, point.y, ghMain, NULL);
+			wstring arg = createArgFromList(arFiles);
+			wstring param = dqIfSpace(szSendToPath) + L" " + arg;
 
-
-
-				// ((CMainFrame*)theApp.m_pMainWnd)->SetMessageText(L"");
-				if (iCmd == ID_SHELLCUSTOM_OPENPARENT)
-				{
-					OpenFolder(ghMain, arFiles[0].c_str());
-				}
-				else if (ID_SHELLCUSTOM_SENDTO_START <= iCmd && iCmd <= ID_SHELLCUSTOM_SENDTO_END)
-				{
-					wstring runfile = sendtomap[iCmd];
-					DASSERT(runfile.size() != 0);
-
-					TCHAR szSendToPath[MAX_PATH];
-					if (SHGetSpecialFolderPath(NULL, szSendToPath, CSIDL_SENDTO, FALSE))
-					{
-						PathAddBackslash(szSendToPath);
-						lstrcat(szSendToPath, runfile.c_str());
-
-						wstring arg = ddd(arFiles);
-						wstring param = dqIfSpace(szSendToPath) + L" " + arg;
-						// int len = arg.size();
-
-						if (IsWinVistaOrHigher())
-							OpenCommon(ghMain, szSendToPath, arg.c_str(), NULL);
-						else
-							OpenCommonShortcutSpecial(ghMain, szSendToPath, arg.c_str(), NULL);
-
-					}
-				}
-				else if (iCmd == ID_SHELLCUSTOM_CUT)
-				{
-					SetFileOntoClipboard(arFiles, TRUE);
-				}
-				else if (iCmd == ID_SHELLCUSTOM_COPY)
-				{
-					SetFileOntoClipboard(arFiles, FALSE);
-				}
-				else if(iCmd==32792)
-				{
-					SHELLEXECUTEINFO info = {};
-					wstring arg = ddd(arFiles);
-					info.cbSize = sizeof info;
-					info.lpFile = arg.c_str();
-					info.nShow = SW_SHOW;
-					info.fMask = SEE_MASK_INVOKEIDLIST;
-					info.lpVerb = L"properties";
-
-					ShellExecuteEx(&info);
-				}
-				else if (iCmd > 0)
-				{
-					CMINVOKECOMMANDINFOEX info = { 0 };
-					info.cbSize = sizeof(info);
-					// info.fMask = CMIC_MASK_UNICODE | CMIC_MASK_PTINVOKE;
-					info.fMask = CMIC_MASK_PTINVOKE;
-					if (GetKeyState(VK_CONTROL) < 0)
-					{
-						info.fMask |= CMIC_MASK_CONTROL_DOWN;
-					}
-					if (GetKeyState(VK_SHIFT) < 0)
-					{
-						info.fMask |= CMIC_MASK_SHIFT_DOWN;
-					}
-					info.hwnd = ghMain;
-					info.lpVerb = MAKEINTRESOURCEA(iCmd - ID_SHELLMENU_START);
-					//info.lpVerbW = MAKEINTRESOURCEW(iCmd - ID_SHELLMENU_START);
-					info.nShow = SW_SHOWNORMAL;
-					info.ptInvoke = point;
-
-					/**
-					TCHAR szVerbW[256];
-					if(SUCCEEDED(pcm->GetCommandString(iCmd - ID_SHELLMENU_START,
-					GCS_VERBW,
-					NULL,
-					(LPSTR)szVerbW,
-					sizeof(szVerbW)/sizeof(szVerbW[0]))))
-					{
-					info.lpVerbW = szVerbW;
-					}
-					else
-					{
-					char szVerb[256];
-					if(SUCCEEDED(pcm->GetCommandString(iCmd - ID_SHELLMENU_START,
-					GCS_VERBA,
-					NULL,
-					szVerb,
-					sizeof(szVerb)/sizeof(szVerb[0]))))
-					{
-					info.lpVerb = szVerb;
-					}
-					}
-					**/
-					if (m_pcm3)
-						m_pcm3->InvokeCommand((LPCMINVOKECOMMANDINFO)&info);
-					else
-						pcm->InvokeCommand((LPCMINVOKECOMMANDINFO)&info);
-				}
-				Sleep(10000);
-
-				m_pcm = NULL;
-				m_pcm2 = NULL;
-				m_pcm3 = NULL;
-			}
+			if (IsWinVistaOrHigher())
+				OpenCommon(ghMain, szSendToPath, arg.c_str(), NULL);
+			else
+				OpenCommonShortcutSpecial(ghMain, szSendToPath, arg.c_str(), NULL);
 		}
-	} while (0);
+	}
+	else if (iCmd == ID_SHELLCUSTOM_CUT)
+	{
+		SetFileOntoClipboard(arFiles, TRUE);
+	}
+	else if (iCmd == ID_SHELLCUSTOM_COPY)
+	{
+		SetFileOntoClipboard(arFiles, FALSE);
+	}
+	else if (iCmd > 0)
+	{
+		const int iShellCmd = iCmd - ID_SHELLMENU_START;
+		if (iShellCmd == 19 && bUseMulti)
+		{
+			// property
+			IDataObjectPtr pDO;
+			pSFDesktop->GetUIObjectOf(ghMain, countPidls(pItemIDList),
+				pItemIDList, IID_IDataObject, nullptr, (void**)& pDO);
 
-	freepKey(pKey);
-	freeppItemIDList(pItemIDList);
+			if (!pDO)
+				return false;
+
+			if(FAILED(SHMultiFileProperties(pDO, 0)))
+				return false;
+		}
+		else
+		{
+			CMINVOKECOMMANDINFOEX info = { 0 };
+			info.cbSize = sizeof(info);
+			// info.fMask = CMIC_MASK_UNICODE | CMIC_MASK_PTINVOKE;
+			info.fMask = CMIC_MASK_PTINVOKE;
+			if (GetKeyState(VK_CONTROL) < 0)
+			{
+				info.fMask |= CMIC_MASK_CONTROL_DOWN;
+			}
+			if (GetKeyState(VK_SHIFT) < 0)
+			{
+				info.fMask |= CMIC_MASK_SHIFT_DOWN;
+			}
+			info.hwnd = ghMain;
+			info.lpVerb = MAKEINTRESOURCEA(iShellCmd);
+			//info.lpVerbW = MAKEINTRESOURCEW(iCmd - ID_SHELLMENU_START);
+			info.nShow = SW_SHOWNORMAL;
+			info.ptInvoke = point;
+
+			if (m_pcm3)
+				hr = m_pcm3->InvokeCommand((LPCMINVOKECOMMANDINFO)& info);
+			else
+				hr = pcm->InvokeCommand((LPCMINVOKECOMMANDINFO)& info);
+
+			if (FAILED(hr))
+				return false;
+
+			m_pcm = NULL;
+			m_pcm2 = NULL;
+			m_pcm3 = NULL;
+		}
+	}
+	return true;
 }
 
 STRVEC gInFiles;
@@ -1087,7 +1064,7 @@ LRESULT CALLBACK MainWndProc(
 	_In_ UINT   uMsg,
 	_In_ WPARAM wParam,
 	_In_ LPARAM lParam
-	)
+)
 {
 	if (m_pcm3)
 	{
@@ -1105,22 +1082,43 @@ LRESULT CALLBACK MainWndProc(
 		}
 	}
 
+	static UINT_PTR snTimerID;
+	static int snCountDown;
 	switch (uMsg)
 	{
-		case WM_CREATE:
-		{
-			
-		}
-		break;
+	case WM_CREATE:
+	{
 
-		case WM_APP_TEST:
+	}
+	break;
+
+	case WM_APP_TEST:
+	{
+		//STRVEC arFiles;
+		//arFiles.push_back(L"C:\\LegacyPrograms\\WhiteBrowser\\WhiteBrowser.exe");
+		if (ShowShellContextMenu(gInFiles))
 		{
-			//STRVEC arFiles;
-			//arFiles.push_back(L"C:\\LegacyPrograms\\WhiteBrowser\\WhiteBrowser.exe");
-			ShowShellContextMenu(gInFiles);
+			snCountDown = 10;
+			snTimerID = SetTimer(hwnd, 1, 1000, nullptr);
+		}
+		else
+		{
+			ASSERT(false);
 			PostQuitMessage(0);
 		}
-		break;
+	}
+	break;
+
+	case WM_TIMER:
+	{
+		if (--snCountDown < 0)
+		{
+			KillTimer(hwnd, snTimerID);
+			snTimerID = 0;
+			PostQuitMessage(0);
+		}
+	}
+	break;
 	}
 	return DefWindowProc(hwnd, uMsg, wParam, lParam);
 }
@@ -1130,7 +1128,7 @@ int CALLBACK wWinMain2(
 	_In_ HINSTANCE hPrevInstance,
 	_In_ LPWSTR     lpCmdLine,
 	_In_ int       nCmdShow
-	)
+)
 {
 	{
 		CCommandLineParser parser;
@@ -1155,13 +1153,7 @@ int CALLBACK wWinMain2(
 		TfxMessageBox(I18N(L"No input path"));
 		return 0;
 	}
-#ifdef NDEBUG
-	if (gInFiles.size() > 1)
-	{
-		TfxMessageBox(I18N(L"Currently only one file is acceptable."));
-		return 0;
-	}
-#endif
+
 	if (FAILED(OleInitialize(NULL)))
 	{
 		TfxMessageBox(L"OleInitialize failed.");
@@ -1215,5 +1207,7 @@ int CALLBACK wWinMain(
 {
 	int ret = wWinMain2(hInstance, hPrevInstance, lpCmdLine, nCmdShow);
 	WaitWindowClose();
-	return ret;
+	// return ret;
+	// refcount not right
+	ExitProcess(ret);
 }
