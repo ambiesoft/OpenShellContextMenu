@@ -20,6 +20,7 @@ _COM_SMARTPTR_TYPEDEF(IContextMenu3, __uuidof(IContextMenu3));
 #include <set>
 #include <map>
 #include <algorithm>
+#include <memory>
 
 #define DASSERT(x) assert(x)
 #define TRACE(x) (void)0

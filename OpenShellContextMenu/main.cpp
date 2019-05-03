@@ -6,9 +6,14 @@
 #include "../../lsMisc/GetFilesInfo.h"
 #include "../../lsMisc/OpenCommon.h"
 #include "../../lsMisc/IsWindowsNT.h"
-#include "../../lsMisc/stlScopedClear.h"
+// #include "../../lsMisc/stlScopedClear.h"
 #include "../../lsMisc/stdwin32/stdwin32.h"
 #include "../../lsMisc/CommandLineParser.h"
+#include "../../lsMisc/stdosd/stdosd.h"
+#include "../../lsMisc/tstring.h"
+#include "../../lsMisc/CHandle.h"
+#include "../../lsMisc/WaitWindowClose.h"
+
 #include "ContextMenuCB.h"
 
 #pragma comment(lib,"Credui.lib")
@@ -16,6 +21,7 @@
 #pragma comment(lib,"shell32.lib")
 
 using namespace Ambiesoft;
+using namespace Ambiesoft::stdosd;
 using namespace stdwin32;
 using namespace std;
 
@@ -108,10 +114,10 @@ void getExtsFromPath(const STRVEC& arrayFiles, set<wstring>& exts)
 	int nCount = (int)arrayFiles.size();
 	for (int i = 0; i < nCount; ++i)
 	{
-		int nDot = arrayFiles[i].rfind(L'.');// ReverseFind(L'.');
+		size_t nDot = arrayFiles[i].rfind(L'.');// ReverseFind(L'.');
 		if (nDot==wstring::npos)
 			continue;
-		int nBS = arrayFiles[i].rfind(L'\\');// ReverseFind(L'\\');
+		size_t nBS = arrayFiles[i].rfind(L'\\');// ReverseFind(L'\\');
 		if (nBS > nDot)
 			continue;
 
@@ -304,15 +310,14 @@ HRESULT GetUIObjectOfFile(HWND hwnd, LPCWSTR pszPath, REFIID riid, void **ppv)
 
 wstring removeExt(LPCWSTR p)
 {
-	LPWSTR pT = _wcsdup(p);
-	STLSCODEDFREECRT(pT);
+	LPWSTR pT = stdStrDup(p);
 	LPWSTR pRet = wcsrchr(pT, L'.');
 	if (!pRet)
 		return p;
 	*pRet = 0;
 	return pT;
 }
-BOOL createFileMenu(HMENU hSendTo, LPCTSTR pDirectory, map<UINT, wstring>& sendtomap)
+BOOL createFileMenu(HMENU hSendTo, LPCTSTR pDirectory, map<size_t, wstring>& sendtomap)
 {
 	FILESINFOW fi;
 	if (!GetFilesInfoW(pDirectory, fi))
@@ -327,7 +332,7 @@ BOOL createFileMenu(HMENU hSendTo, LPCTSTR pDirectory, map<UINT, wstring>& sendt
 		if ((fi[i].dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY))
 			continue;
 
-		if (!InsertMenu(hSendTo, i, MF_BYPOSITION, ID_SHELLCUSTOM_SENDTO_START + i, removeExt(fi[i].cFileName).c_str()))
+		if (!InsertMenu(hSendTo, (int)i, MF_BYPOSITION, ID_SHELLCUSTOM_SENDTO_START + i, removeExt(fi[i].cFileName).c_str()))
 			RETURNFALSE;
 
 		sendtomap[ID_SHELLCUSTOM_SENDTO_START + i] = fi[i].cFileName;
@@ -350,7 +355,7 @@ wstring dqIfSpace(const wstring& s)
 	return _T("\"") + s + _T("\"");
 }
 
-BOOL CreateShellMenu(HMENU hmenu, IContextMenuPtr pcm, map<UINT, wstring>& sendtomap, BOOL bUseMulti)
+BOOL CreateShellMenu(HMENU hmenu, IContextMenuPtr pcm, map<size_t, wstring>& sendtomap, BOOL bUseMulti)
 {
 	IContextMenu3Ptr pcm3 = pcm;
 	if (pcm3)
@@ -496,20 +501,22 @@ static BOOL GetShortcutFileInfo(LPCTSTR pszShortcutFile,
 				int size = 16;
 				do
 				{
-					TCHAR* pBuff = (TCHAR*)malloc(size);
-					stlsoft::scoped_handle<void*> ma(pBuff, free);
-					if (FAILED(pShellLink->GetArguments(pBuff, size / sizeof(TCHAR))))
+					//TCHAR* pBuff = (TCHAR*)malloc(size);
+					//stlsoft::scoped_handle<void*> ma(pBuff, free);
+					unique_ptr<TCHAR[]> buff(new TCHAR[size]);
+					if (FAILED(pShellLink->GetArguments(buff.get(), size / sizeof(TCHAR))))
 						return FALSE;
 
 					size *= 2;
-					TCHAR* pBuff2 = (TCHAR*)malloc(size);
-					stlsoft::scoped_handle<void*> ma2(pBuff2, free);
-					if (FAILED(pShellLink->GetArguments(pBuff2, size / sizeof(TCHAR))))
+					//TCHAR* pBuff2 = (TCHAR*)malloc(size);
+					//stlsoft::scoped_handle<void*> ma2(pBuff2, free);
+					unique_ptr<TCHAR[]> buff2(new TCHAR[size]);
+					if (FAILED(pShellLink->GetArguments(buff2.get(), size / sizeof(TCHAR))))
 						return FALSE;
 
-					if (lstrcmp(pBuff, pBuff2) == 0)
+					if (lstrcmp(buff.get(), buff2.get()) == 0)
 					{
-						arg = pBuff2;
+						arg = buff2.get();
 						break;
 					}
 				} while (true);
@@ -567,8 +574,9 @@ BOOL OpenCommonShortcutSpecial(HWND hWnd, LPCTSTR pApp, LPCTSTR pCommand = NULL,
 		command += _T(" ");
 		command += pCommand;
 	}
-	LPTSTR pCT = _wcsdup(command.c_str());
-	stlsoft::scoped_handle<void*> ma(pCT, free);
+	//LPTSTR pCT = _wcsdup(command.c_str());
+	// stlsoft::scoped_handle<void*> ma(pCT, free);
+	unique_ptr<TCHAR[]> pCT(stdStrDup(command.c_str()));
 
 	if (FALSE) // bIsAdmin)
 	{
@@ -683,7 +691,7 @@ BOOL OpenCommonShortcutSpecial(HWND hWnd, LPCTSTR pApp, LPCTSTR pCommand = NULL,
 		if (!CreateProcessAsUser(
 			hToken,
 			targetFile.c_str(), // _T("c:\\windows\\system32\\notepad.exe"),
-			pCT,
+			pCT.get(),
 			NULL,
 			NULL,
 			TRUE,
@@ -706,7 +714,7 @@ BOOL OpenCommonShortcutSpecial(HWND hWnd, LPCTSTR pApp, LPCTSTR pCommand = NULL,
 		PROCESS_INFORMATION pi = { 0 };
 		if (!CreateProcess(
 			targetFile.c_str(),
-			pCT,
+			pCT.get(),
 			NULL,
 			NULL,
 			FALSE,
@@ -738,7 +746,7 @@ BOOL SetFileOntoClipboard(const STRVEC& arFiles, BOOL bCut)
 
 
 	{
-		UINT uBuffSize = 0;
+		size_t uBuffSize = 0;
 		HGLOBAL hgDrop = NULL;
 
 
@@ -837,6 +845,21 @@ void freeppItemIDList(LPCITEMIDLIST* pItemIDList)
 	free(pItemIDList);
 }
 
+wstring ddd(const STRVEC& arFiles)
+{
+	wstring arg;
+	for (size_t i = 0; i < arFiles.size(); ++i)
+	{
+		wstring s = arFiles[i];
+		if (s[0] != L'"' && s.find(L' ') != wstring::npos)
+			s = L"\"" + s + L"\"";
+
+		arg += s;
+		if ((i + 1) != arFiles.size())
+			arg += L" ";
+	}
+	return arg;
+}
 void ShowShellContextMenu(const STRVEC& arFiles)
 {
 	BOOL bUseMulti = arFiles.size() > 1;
@@ -932,11 +955,11 @@ void ShowShellContextMenu(const STRVEC& arFiles)
 
 		if (SUCCEEDED(hr))
 		{
-			HMENU hmenu = CreatePopupMenu();
-			STLSCOPEDFREE(hmenu, HMENU, DestroyMenu);
-
-			map<UINT, wstring> sendtomap;
-			if (hmenu && CreateShellMenu(hmenu, pcm, sendtomap, bUseMulti))
+			//HMENU hmenu = CreatePopupMenu();
+			//STLSCOPEDFREE(hmenu, HMENU, DestroyMenu);
+			CHMenu menu(CreatePopupMenu());
+			map<size_t, wstring> sendtomap;
+			if (menu && CreateShellMenu(menu, pcm, sendtomap, bUseMulti))
 			{
 				pcm->QueryInterface(IID_IContextMenu2, (void**)&m_pcm2);
 				pcm->QueryInterface(IID_IContextMenu3, (void**)&m_pcm3);
@@ -944,7 +967,7 @@ void ShowShellContextMenu(const STRVEC& arFiles)
 
 				POINT point;
 				GetCursorPos(&point);
-				int iCmd = TrackPopupMenuEx(hmenu, TPM_RETURNCMD,
+				int iCmd = TrackPopupMenuEx(menu, TPM_RETURNCMD,
 					point.x, point.y, ghMain, NULL);
 
 
@@ -965,21 +988,9 @@ void ShowShellContextMenu(const STRVEC& arFiles)
 						PathAddBackslash(szSendToPath);
 						lstrcat(szSendToPath, runfile.c_str());
 
-						wstring arg;
-						for (size_t i = 0; i<arFiles.size(); ++i)
-						{
-							wstring s = arFiles[i];
-							if (s[0] != L'"' && s.find(L' ') != wstring::npos)
-								s = L"\"" + s + L"\"";
-
-							arg += s;
-							if ((i+1) != arFiles.size())
-								arg += L" ";
-						}
-						
-
+						wstring arg = ddd(arFiles);
 						wstring param = dqIfSpace(szSendToPath) + L" " + arg;
-						int len = arg.size();
+						// int len = arg.size();
 
 						if (IsWinVistaOrHigher())
 							OpenCommon(ghMain, szSendToPath, arg.c_str(), NULL);
@@ -995,6 +1006,18 @@ void ShowShellContextMenu(const STRVEC& arFiles)
 				else if (iCmd == ID_SHELLCUSTOM_COPY)
 				{
 					SetFileOntoClipboard(arFiles, FALSE);
+				}
+				else if(iCmd==32792)
+				{
+					SHELLEXECUTEINFO info = {};
+					wstring arg = ddd(arFiles);
+					info.cbSize = sizeof info;
+					info.lpFile = arg.c_str();
+					info.nShow = SW_SHOW;
+					info.fMask = SEE_MASK_INVOKEIDLIST;
+					info.lpVerb = L"properties";
+
+					ShellExecuteEx(&info);
 				}
 				else if (iCmd > 0)
 				{
@@ -1044,6 +1067,7 @@ void ShowShellContextMenu(const STRVEC& arFiles)
 					else
 						pcm->InvokeCommand((LPCMINVOKECOMMANDINFO)&info);
 				}
+				Sleep(10000);
 
 				m_pcm = NULL;
 				m_pcm2 = NULL;
@@ -1101,7 +1125,7 @@ LRESULT CALLBACK MainWndProc(
 	return DefWindowProc(hwnd, uMsg, wParam, lParam);
 }
 
-int CALLBACK wWinMain(
+int CALLBACK wWinMain2(
 	_In_ HINSTANCE hInstance,
 	_In_ HINSTANCE hPrevInstance,
 	_In_ LPWSTR     lpCmdLine,
@@ -1131,7 +1155,13 @@ int CALLBACK wWinMain(
 		TfxMessageBox(I18N(L"No input path"));
 		return 0;
 	}
-
+#ifdef NDEBUG
+	if (gInFiles.size() > 1)
+	{
+		TfxMessageBox(I18N(L"Currently only one file is acceptable."));
+		return 0;
+	}
+#endif
 	if (FAILED(OleInitialize(NULL)))
 	{
 		TfxMessageBox(L"OleInitialize failed.");
@@ -1153,7 +1183,7 @@ int CALLBACK wWinMain(
 		0,
 		WS_EX_TOOLWINDOW,
 		nullptr);
-	STLSCOPEDFREE(ghMain, HWND, DestroyWindow);
+	CHWnd hfreer(ghMain);
 
 	ShowWindow(ghMain, SW_SHOW);
 	PostMessage(ghMain, WM_APP_TEST, 0, 0);
@@ -1172,5 +1202,18 @@ int CALLBACK wWinMain(
 			DispatchMessage(&msg);
 		}
 	}
+
 	return 0;
+}
+
+int CALLBACK wWinMain(
+	_In_ HINSTANCE hInstance,
+	_In_ HINSTANCE hPrevInstance,
+	_In_ LPWSTR     lpCmdLine,
+	_In_ int       nCmdShow
+)
+{
+	int ret = wWinMain2(hInstance, hPrevInstance, lpCmdLine, nCmdShow);
+	WaitWindowClose();
+	return ret;
 }

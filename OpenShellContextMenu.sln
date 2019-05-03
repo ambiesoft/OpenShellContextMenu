@@ -1,9 +1,14 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 2013
-VisualStudioVersion = 12.0.40629.0
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.28803.352
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "OpenShellContextMenu", "OpenShellContextMenu\OpenShellContextMenu.vcxproj", "{00CDD40C-3D97-4B2C-AE8C-117B71F095C9}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "zzzDist", "zzzDist\zzzDist.vcxproj", "{DE0B2E60-C56E-4AD2-94E9-4174C0701329}"
+	ProjectSection(ProjectDependencies) = postProject
+		{00CDD40C-3D97-4B2C-AE8C-117B71F095C9} = {00CDD40C-3D97-4B2C-AE8C-117B71F095C9}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,8 +26,17 @@ Global
 		{00CDD40C-3D97-4B2C-AE8C-117B71F095C9}.Release|Win32.Build.0 = Release|Win32
 		{00CDD40C-3D97-4B2C-AE8C-117B71F095C9}.Release|x64.ActiveCfg = Release|x64
 		{00CDD40C-3D97-4B2C-AE8C-117B71F095C9}.Release|x64.Build.0 = Release|x64
+		{DE0B2E60-C56E-4AD2-94E9-4174C0701329}.Debug|Win32.ActiveCfg = Debug|Win32
+		{DE0B2E60-C56E-4AD2-94E9-4174C0701329}.Debug|x64.ActiveCfg = Debug|x64
+		{DE0B2E60-C56E-4AD2-94E9-4174C0701329}.Release|Win32.ActiveCfg = Release|Win32
+		{DE0B2E60-C56E-4AD2-94E9-4174C0701329}.Release|Win32.Build.0 = Release|Win32
+		{DE0B2E60-C56E-4AD2-94E9-4174C0701329}.Release|x64.ActiveCfg = Release|x64
+		{DE0B2E60-C56E-4AD2-94E9-4174C0701329}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {F97A4975-30D5-4BE4-A405-375C7B16A722}
 	EndGlobalSection
 EndGlobal
