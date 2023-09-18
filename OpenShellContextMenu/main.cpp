@@ -1,17 +1,5 @@
 #include "stdafx.h"
 
-#include <functional>
-
-#include "../../lsMisc/CreateSimpleWindow.h"
-#include "../../lsMisc/GetFilesInfo.h"
-#include "../../lsMisc/OpenCommon.h"
-#include "../../lsMisc/IsWindowsNT.h"
-#include "../../lsMisc/CommandLineParser.h"
-#include "../../lsMisc/stdosd/stdosd.h"
-#include "../../lsMisc/tstring.h"
-#include "../../lsMisc/CHandle.h"
-#include "../../lsMisc/WaitWindowClose.h"
-
 #include "ShellFolderDS.h"
 #include "ContextMenuCB.h"
 

@@ -25,12 +25,20 @@ _COM_SMARTPTR_TYPEDEF(IContextMenu3, __uuidof(IContextMenu3));
 #include <map>
 #include <algorithm>
 #include <memory>
+#include <functional>
+
+#include "../../lsMisc/CreateSimpleWindow.h"
+#include "../../lsMisc/GetFilesInfo.h"
+#include "../../lsMisc/OpenCommon.h"
+#include "../../lsMisc/IsWindowsNT.h"
+#include "../../lsMisc/CommandLineParser.h"
+#include "../../lsMisc/stdosd/stdosd.h"
+#include "../../lsMisc/tstring.h"
+#include "../../lsMisc/CHandle.h"
+#include "../../lsMisc/WaitWindowClose.h"
+#include "../../lsMisc/I18N.h"
 
 #define DASSERT(x) assert(x)
-//#define TRACE(x) (void)0
-//#define TRACE1(x,y) (void)0
-
-#define I18N(s) s
 
 #define APPNAME L"OpenShellContextMenu"
 
