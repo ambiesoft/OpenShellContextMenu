@@ -1,6 +1,6 @@
 .vs/
 .*~
-
+Build/
 Debug/
 Release/
 ipch/
