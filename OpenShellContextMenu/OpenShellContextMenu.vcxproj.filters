@@ -33,9 +33,6 @@
     <ClCompile Include="..\..\lsMisc\OpenCommon.cpp">
       <Filter>2 Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\lsMisc\stdwin32\stdwin32.cpp">
-      <Filter>2 Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\lsMisc\IsWindowsNT.cpp">
       <Filter>2 Source Files</Filter>
     </ClCompile>
@@ -75,9 +72,6 @@
       <Filter>1 Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\lsMisc\OpenCommon.h">
-      <Filter>1 Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\lsMisc\stdwin32\stdwin32.h">
       <Filter>1 Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\lsMisc\IsWindowsNT.h">

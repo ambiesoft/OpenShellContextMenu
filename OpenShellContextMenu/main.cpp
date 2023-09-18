@@ -6,8 +6,6 @@
 #include "../../lsMisc/GetFilesInfo.h"
 #include "../../lsMisc/OpenCommon.h"
 #include "../../lsMisc/IsWindowsNT.h"
-// #include "../../lsMisc/stlScopedClear.h"
-#include "../../lsMisc/stdwin32/stdwin32.h"
 #include "../../lsMisc/CommandLineParser.h"
 #include "../../lsMisc/stdosd/stdosd.h"
 #include "../../lsMisc/tstring.h"
@@ -23,7 +21,6 @@
 
 using namespace Ambiesoft;
 using namespace Ambiesoft::stdosd;
-using namespace stdwin32;
 using namespace std;
 
 #define RETURNFALSE do {DASSERT(FALSE);return FALSE;} while(0)
@@ -45,6 +42,10 @@ CShellFolderDS spy;
 int TfxMessageBox(LPCWSTR pMessage)
 {
 	return MessageBox(ghMain, pMessage, APPNAME, MB_ICONEXCLAMATION);
+}
+int TfxMessageBox(wstring str)
+{
+	return TfxMessageBox(str.c_str());
 }
 void showpidl(LPITEMIDLIST pidl)
 {
@@ -312,15 +313,6 @@ HRESULT GetUIObjectOfFile(HWND hwnd, LPCWSTR pszPath, REFIID riid, void** ppv)
 	return hr;
 }
 
-wstring removeExt(LPCWSTR p)
-{
-	LPWSTR pT = stdStrDup(p);
-	LPWSTR pRet = wcsrchr(pT, L'.');
-	if (!pRet)
-		return p;
-	*pRet = 0;
-	return pT;
-}
 BOOL createFileMenu(HMENU hSendTo, LPCTSTR pDirectory, map<size_t, wstring> & sendtomap)
 {
 	FILESINFOW fi;
@@ -336,7 +328,7 @@ BOOL createFileMenu(HMENU hSendTo, LPCTSTR pDirectory, map<size_t, wstring> & se
 		if ((fi[i].dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY))
 			continue;
 
-		if (!InsertMenu(hSendTo, (int)i, MF_BYPOSITION, ID_SHELLCUSTOM_SENDTO_START + i, removeExt(fi[i].cFileName).c_str()))
+		if (!InsertMenu(hSendTo, (int)i, MF_BYPOSITION, ID_SHELLCUSTOM_SENDTO_START + i, stdRemoveExtension(fi[i].cFileName).c_str()))
 			RETURNFALSE;
 
 		sendtomap[ID_SHELLCUSTOM_SENDTO_START + i] = fi[i].cFileName;
@@ -578,9 +570,8 @@ BOOL OpenCommonShortcutSpecial(HWND hWnd, LPCTSTR pApp, LPCTSTR pCommand = NULL,
 		command += _T(" ");
 		command += pCommand;
 	}
-	//LPTSTR pCT = _wcsdup(command.c_str());
-	// stlsoft::scoped_handle<void*> ma(pCT, free);
-	unique_ptr<TCHAR[]> pCT(stdStrDup(command.c_str()));
+
+	unique_ptr<TCHAR[]> pCT(_wcsdup(command.c_str()));
 
 	if (FALSE) // bIsAdmin)
 	{
@@ -1143,9 +1134,16 @@ int CALLBACK wWinMain2(
 			TfxMessageBox(message.c_str());
 			return 1;
 		}
+
 		for (size_t i = 0; i < mainOption.getValueCount(); ++i)
 		{
-			gInFiles.push_back(mainOption.getValue(i));
+			wstring full = stdGetFullPathName(mainOption.getValue(i));
+			if (!stdFileExists(full) && !stdDirectoryExists(full)) 
+			{
+				TfxMessageBox(stdFormat(I18N(L"'%s' does not exist."), mainOption.getValue(i).c_str()));
+				return 1;
+			}
+			gInFiles.push_back(full);
 		}
 	}
 	if (gInFiles.empty())
