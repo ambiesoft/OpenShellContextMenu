@@ -8,3 +8,6 @@ OpenShellContextMenu.sdf
 OpenShellContextMenu.v12.suo
 OpenShellContextMenu/OpenShellContextMenu.vcxproj.user
 
+*.aps
+*.user
+

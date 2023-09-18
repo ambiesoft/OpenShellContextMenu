@@ -37,6 +37,7 @@ _COM_SMARTPTR_TYPEDEF(IContextMenu3, __uuidof(IContextMenu3));
 #include "../../lsMisc/CHandle.h"
 #include "../../lsMisc/WaitWindowClose.h"
 #include "../../lsMisc/I18N.h"
+#include "../../lsMisc/GetVersionString.h"
 
 #define DASSERT(x) assert(x)
 

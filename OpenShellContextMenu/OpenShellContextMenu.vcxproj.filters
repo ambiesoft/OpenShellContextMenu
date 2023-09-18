@@ -13,6 +13,9 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="4 Language Files">
+      <UniqueIdentifier>{d405d1fb-10e5-4684-9317-64b642830e31}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -60,6 +63,9 @@
     <ClCompile Include="..\..\lsMisc\I18N.cpp">
       <Filter>2 Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\lsMisc\GetVersionString.cpp">
+      <Filter>2 Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stdafx.h">
@@ -104,5 +110,21 @@
     <ClInclude Include="..\..\lsMisc\I18N.h">
       <Filter>1 Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\lsMisc\GetVersionString.h">
+      <Filter>1 Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="resource.h">
+      <Filter>1 Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="lang\jpn.txt">
+      <Filter>4 Language Files</Filter>
+    </Text>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="OpenShellContextMenu.rc">
+      <Filter>3 Resource Files</Filter>
+    </ResourceCompile>
   </ItemGroup>
 </Project>

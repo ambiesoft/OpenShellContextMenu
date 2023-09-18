@@ -15,8 +15,6 @@ using namespace std;
 
 HWND ghMain;
 
-
-
 typedef HRESULT(__stdcall* pfnSHCreateDefaultContextMenu)(const DEFCONTEXTMENU* pdcm, REFIID riid, void** ppv);
 pfnSHCreateDefaultContextMenu fnSHCreateDefaultContextMenu;
 
@@ -871,7 +869,7 @@ bool ShowShellContextMenu(const STRVEC & arFiles)
 	{
 		if (FAILED(getPIDLsFromPath(arFiles, &pItemIDList)))
 		{
-			TfxMessageBox(I18N(L"failed to get pidls"));
+			TfxMessageBox(I18N(L"Failed to get pidls"));
 			return false;
 		}
 		DASSERT(arFiles.size() == countPidls(pItemIDList));
@@ -879,7 +877,7 @@ bool ShowShellContextMenu(const STRVEC & arFiles)
 		UINT nKeyCount = 0;
 		if (FAILED(getKeysFromPath(arFiles, &pKey, &nKeyCount)))
 		{
-			TfxMessageBox(I18N(L"failed to get pidls keys"));
+			TfxMessageBox(I18N(L"Failed to get pidls keys"));
 			return false;
 		}
 
@@ -1111,13 +1109,31 @@ int CALLBACK wWinMain2(
 {
 	{
 		CCommandLineParser parser;
+		bool bHelp = false;
+		parser.AddOptionRange({ L"/h",L"-h",L"--help",L"/?",L"-v",L"--version" },
+			ArgCount::ArgCount_Zero,
+			&bHelp,
+			ArgEncodingFlags_Default,
+			L"Show Help");
+
 		COption mainOption;
 		parser.AddOption(&mainOption);
+		
 		parser.Parse();
+		
+		if (bHelp)
+		{
+			MessageBox(nullptr,
+				stdFormat(L"%s v%s", APPNAME, GetVersionString(nullptr, 3).c_str()).c_str(),
+				APPNAME,
+				MB_ICONINFORMATION);
+			return 0;
+		}
 		wstring unk = parser.getUnknowOptionStrings();
 		if (!unk.empty())
 		{
-			wstring message = I18N(L"Unknown option(s):\n");
+			wstring message = I18N(L"Unknown option(s):");
+			message += L"\n";
 			message += unk;
 			TfxMessageBox(message.c_str());
 			return 1;
@@ -1136,7 +1152,7 @@ int CALLBACK wWinMain2(
 	}
 	if (gInFiles.empty())
 	{
-		TfxMessageBox(I18N(L"No input path"));
+		TfxMessageBox(I18N(L"No input file"));
 		return 0;
 	}
 
@@ -1193,7 +1209,10 @@ int CALLBACK wWinMain(
 {
 	int ret = wWinMain2(hInstance, hPrevInstance, lpCmdLine, nCmdShow);
 	WaitWindowClose();
-	// return ret;
+#ifdef _DEBUG
+	return ret;
+#else
 	// refcount not right
 	ExitProcess(ret);
+#endif
 }
