@@ -137,8 +137,8 @@
 
     "TotalFileCount": "exact",
     "archivedir": "C:\\Linkout",
-    "remotedir": "https://ambiesoft.com/ffdav/uploads/Release/",
-    "remotesha1": "https://ambiesoft.com/ffdav/uploads/getSha1.php?file=Release/{}",
+    "remotedir": "https://ambiesoft.com/ffdav/uploads/OpenShellContextMenu/",
+    "remotesha1": "https://ambiesoft.com/ffdav/uploads/getSha1.php?file=OpenShellContextMenu/{}",
     "ShouldNotBeFiles": [
     	"OpenShellContextMenu.ini"
     ],
